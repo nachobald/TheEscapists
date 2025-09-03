@@ -4,12 +4,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
 
 public class GamePanel extends JPanel {
     
 	private final int TILE_SIZE = 32;
     private int mapRows, mapCols;
     private int viewRows, viewCols;
+    private ArrayList<Guard> guards;
 
     private char[][] map;
     private int playerX = 1;
@@ -20,11 +22,15 @@ public class GamePanel extends JPanel {
         this.mapCols = mapCols;
         this.viewRows = viewRows;
         this.viewCols = viewCols;
+        this.guards = new ArrayList<>();
 
         setPreferredSize(new Dimension(viewCols * TILE_SIZE, viewRows * TILE_SIZE));
         setBackground(Color.BLACK);
 
         buildMap();
+        
+        guards.add(new Guard(10, 10));
+        guards.add(new Guard(20, 5));
 
         setFocusable(true);
         addKeyListener(new KeyAdapter() {
@@ -45,6 +51,20 @@ public class GamePanel extends JPanel {
                 }
             }
         });
+        
+        //timer per aggiornare il movimento delle guardie
+        Timer timer = new Timer(500, e -> { // ogni 0.5 sec
+            for (Guard g : guards) {
+                g.move(map);
+                if (g.getX() == playerX && g.getY() == playerY) {
+                    System.out.println("Sei stato catturato! Game Over.");
+                    System.exit(0);
+                }
+            }
+            repaint();
+        });
+        timer.start();
+        
     }
 
     private void buildMap() {
@@ -56,7 +76,7 @@ public class GamePanel extends JPanel {
             }
         }
 
-        // muri interni casuali
+        //muri interni casuali
         for (int y = 2; y < mapRows - 2; y += 4) {
             for (int x = 2; x < mapCols - 2; x += 6) map[y][x] = '#';
         }
@@ -88,11 +108,20 @@ public class GamePanel extends JPanel {
             }
         }
 
-        // player
+        //player
         g.setColor(Color.RED);
         int px = (playerX - offsetX) * TILE_SIZE;
         int py = (playerY - offsetY) * TILE_SIZE;
         g.fillOval(px + 4, py + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+        
+        //guard
+        g.setColor(Color.BLUE);
+        for (Guard guard : guards) {
+            int gx = (guard.getX() - offsetX) * TILE_SIZE;
+            int gy = (guard.getY() - offsetY) * TILE_SIZE;
+            g.fillRect(gx + 4, gy + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+        }
+        
     }
 
     public void startGame() {

@@ -15,7 +15,7 @@ public class Guard {
     public int getX() { return x; }
     public int getY() { return y; }
 
-    // Muove la guardia casualmente di una casella (evita muri)
+    //muove la guardia casualmente di una casella (evita muri)
     public void move(char[][] map) {
         int newX = x;
         int newY = y;
@@ -28,7 +28,7 @@ public class Guard {
             case 3 -> newX++;
         }
 
-        if (map[newY][newX] != '#') { // controlla muro
+        if (map[newY][newX] != '#') { //controlla muro
             x = newX;
             y = newY;
         }
