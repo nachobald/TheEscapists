@@ -1,30 +1,19 @@
 package theescapists;
 
-public class Item {
+public abstract class Item {
 
-	private final String name;
-	private int durability;
+	protected final String name;
 	
-	public Item(String name, int durability) {
+	public Item(String name) {
 		this.name = name;
-		this.durability = durability;
 	}
 	
 	public String getName() {
 		return name;
 	}
 	
-	public int getDurability() {
-		return durability;
-	}
+	public abstract String getDescription();
 	
-	public void use() {
-		if(durability > 0) {
-			durability--;
-		}
-	}
+	public abstract void use(GamePanel game);
 	
-	public boolean isBroken() {
-		return durability == 0;
-	}
 }
