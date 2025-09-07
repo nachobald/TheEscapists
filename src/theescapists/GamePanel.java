@@ -15,13 +15,9 @@ public class GamePanel extends JPanel {
     private int playerX = 1, playerY = 1;
 
     //oggetti nella mappa
-    private int exitX = MAP_WIDTH - 2, exitY = MAP_HEIGHT - 2;
-    private final int keyX = 12, keyY = 8;		//cordinate chiave
+    private int exitX, exitY;
+   
     private boolean keyCollected = false;	
-    private int spoon1X = 6, spoon1Y = 15;		//cordinate primo cucchiaio
-    private boolean spoon1Collected = false;
-    private int spoon2X = 17, spoon2Y;			//cordinate secondo cucchiaio
-    private boolean spoon2Collected = false;
     
     //vita del muro
     private int[][] wallHealth;
@@ -32,12 +28,20 @@ public class GamePanel extends JPanel {
 
     //inventario
     private List<Item> inventory = new ArrayList<>();
+    
+    //oggetti mappa
+    private List<MapItem> mapItems = new ArrayList<>();
 
     public GamePanel() {
         setPreferredSize(new Dimension(15 * TILE_SIZE, 15 * TILE_SIZE));
         setBackground(Color.BLACK);
 
         buildMap();
+        
+        //uscita principale
+        exitX = MAP_WIDTH - 2;
+        exitY = 1;
+        map[exitY][exitX] = 'E';
         
         //imposto le "vite" del muro (6)
         wallHealth = new int[MAP_HEIGHT][MAP_WIDTH];
@@ -48,6 +52,11 @@ public class GamePanel extends JPanel {
                 }
             }
         }
+        
+        //posiziona oggetti
+        mapItems.add(new MapItem(37, 21, new Key()));
+        mapItems.add(new MapItem(8, 10, new Spoon(3)));
+        mapItems.add(new MapItem(20, 12, new Spoon(3)));
         
         //posiziona 2 guardie
         guards.add(new Guard(10, 10));
@@ -100,25 +109,53 @@ public class GamePanel extends JPanel {
 
     private void buildMap() {
         map = new char[MAP_HEIGHT][MAP_WIDTH];
+        
+        //muri esterni
         for (int y = 0; y < MAP_HEIGHT; y++) {
             for (int x = 0; x < MAP_WIDTH; x++) {
                 if (x == 0 || y == 0 || x == MAP_WIDTH - 1 || y == MAP_HEIGHT - 1) {
-                    map[y][x] = '#'; //bordi
+                    map[y][x] = '#';
                 } else {
                     map[y][x] = '.'; //pavimento
                 }
             }
         }
 
-        //muri interni
-        for (int y = 2; y < MAP_HEIGHT - 2; y += 4) {
-            for (int x = 2; x < MAP_WIDTH - 2; x += 6) {
-                map[y][x] = '#';
+        //corridoio centrale verticale
+        int midX = MAP_WIDTH / 2;
+        for (int y = 1; y < MAP_HEIGHT - 1; y++) {
+            map[y][midX] = '.'; 
+        }
+
+        //celle a sinistra del corridoio
+        for (int y = 2; y < MAP_HEIGHT - 5; y += 6) {
+            for (int x = 2; x < midX - 2; x += 7) {
+                buildCell(x, y, 5, 4);
             }
         }
 
-        // uscita
-        map[exitY][exitX] = 'E';
+        //celle a destra del corridoio
+        for (int y = 2; y < MAP_HEIGHT - 5; y += 6) {
+            for (int x = midX + 2; x < MAP_WIDTH - 6; x += 7) {
+                buildCell(x, y, 5, 4);
+            }
+        }
+
+        //uscita principale
+        map[1][MAP_WIDTH - 2] = 'E';
+        
+    }
+    
+    private void buildCell(int startX, int startY, int w, int h) {
+        for (int y = startY; y < startY + h; y++) {
+            for (int x = startX; x < startX + w; x++) {
+                if (y == startY || y == startY + h - 1 || x == startX || x == startX + w - 1) {
+                    map[y][x] = '#'; //muri della cella
+                }
+            }
+        }
+        //porta della cella
+        map[startY + 1][startX] = '.'; 
     }
 
     private void movePlayer(int dx, int dy) {
@@ -139,23 +176,16 @@ public class GamePanel extends JPanel {
     }
     
     private void checkForItems() {
-        //raccolta chiave
-        if (!keyCollected && playerX == keyX && playerY == keyY) {
-            addItem(new Key());
-            keyCollected = true;
-        }
-        
-        //cucchiaio 1
-        if (!spoon1Collected && playerX == spoon1X && playerY == spoon1Y) {
-            addItem(new Spoon(3));
-            spoon1Collected = true;
-        }
-
-        //cucchiaio 2
-        if (!spoon2Collected && playerX == spoon2X && playerY == spoon2Y) {
-            addItem(new Spoon(3));
-            spoon2Collected = true;
-        }
+    	for (MapItem mi : mapItems) {
+    	    if (!mi.isCollected() && playerX == mi.getX() && playerY == mi.getY()) {
+    	        addItem(mi.getItem());
+    	        mi.collect();
+    	        
+    	        if (mi.getItem() instanceof Key) {
+                    keyCollected = true;
+                }
+    	    }
+    	}
 
         //controllo uscita
         if (map[playerY][playerX] == 'E') {
@@ -163,8 +193,10 @@ public class GamePanel extends JPanel {
                 // uscita principale, serve la chiave
                 if (keyCollected) {
                     gameOver("Complimenti! Sei evaso dalla porta principale!");
+                }else {
+                	System.out.println("La porta è chiusa ti serve la chiave!");
                 }
-            } else {
+            } else if (map[playerY][playerX] == 'T') {
                 // uscita scavata, non serve la chiave
                 gameOver("Complimenti! Sei evaso scavando un tunnel!");
             }
@@ -175,7 +207,7 @@ public class GamePanel extends JPanel {
     	StringBuilder sb = new StringBuilder("Inventario:\n");
         System.out.println("Inventario:");
         if (inventory.isEmpty()) {
-            sb.append("(vuoto)");
+            sb.append("(vuoto)");	
         } else {
             for (Item i : inventory) {
             	 sb.append("- ").append(i.getDescription()).append("\n");
@@ -209,12 +241,22 @@ public class GamePanel extends JPanel {
                 }
 
                 if (wallHealth[ty][tx] <= 0) {
-                    map[ty][tx] = 'E';
-                    System.out.println("Hai scavato un tunnel!");
+                    boolean isBorder = (tx == 0 || ty == 0 || tx == MAP_WIDTH - 1 || ty == MAP_HEIGHT - 1);
+
+                    //se è bordo: è un tunnel di fuga quindi vittoria immediata
+                    if (isBorder) {
+                        map[ty][tx] = 'T';        //solo per disegno
+                        repaint();
+                        gameOver("Complimenti! Sei evaso scavando un tunnel!");
+                        return;
+                    } else {
+                        //muro interno: diventa passaggio
+                        map[ty][tx] = '.';
+                        System.out.println("Hai aperto un varco nel muro!");
+                    }
                 } else {
                     System.out.println("Colpo al muro! Mancano " + wallHealth[ty][tx] + " colpi.");
                 }
-
                 repaint();
                 return;
             }
@@ -240,7 +282,8 @@ public class GamePanel extends JPanel {
 
                 char tile = map[mapY][mapX];
                 if (tile == '#') g.setColor(Color.DARK_GRAY);
-                else if (tile == 'E') g.setColor(Color.GREEN);
+                else if (tile == 'E') g.setColor(Color.GREEN); 	//porta principale
+                else if (tile == 'T') g.setColor(Color.ORANGE);	//tunnel scavato
                 else g.setColor(Color.LIGHT_GRAY);
 
                 g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
@@ -261,29 +304,25 @@ public class GamePanel extends JPanel {
             g.fillRect(gx + 4, gy + 4, TILE_SIZE - 8, TILE_SIZE - 8);
         }
         
-        //disegna chiave
-        if (!keyCollected) {
-            g.setColor(Color.YELLOW);
-            int kx = (keyX - offsetX) * TILE_SIZE;
-            int ky = (keyY - offsetY) * TILE_SIZE;
-            g.fillOval(kx + 8, ky + 8, TILE_SIZE - 16, TILE_SIZE - 16);
-        }	
+        //disegna oggetti
+        for (MapItem mi : mapItems) {
+            if (!mi.isCollected()) {
+                if (mi.getItem() instanceof Key) {
+                    g.setColor(Color.YELLOW);
+                    int ix = (mi.getX() - offsetX) * TILE_SIZE;
+                    int iy = (mi.getY() - offsetY) * TILE_SIZE;
+                    g.fillOval(ix + 8, iy + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+                }
+                else if (mi.getItem() instanceof Spoon) {
+                    g.setColor(Color.ORANGE);
+                    int ix = (mi.getX() - offsetX) * TILE_SIZE;
+                    int iy = (mi.getY() - offsetY) * TILE_SIZE;
+                    g.fillRect(ix + 10, iy + 10, TILE_SIZE - 20, TILE_SIZE - 20);
+                }
+            }
+        }
         
-        //disegna cucchiaio 1
-        if (!spoon1Collected) {
-            g.setColor(Color.ORANGE);
-            int sx = (spoon1X - offsetX) * TILE_SIZE;
-            int sy = (spoon1Y - offsetY) * TILE_SIZE;
-            g.fillRect(sx + 10, sy + 10, TILE_SIZE - 20, TILE_SIZE - 20);
-        }
-
-        //disegna cucchiaio 2
-        if (!spoon2Collected) {
-            g.setColor(Color.ORANGE);
-            int sx = (spoon2X - offsetX) * TILE_SIZE;
-            int sy = (spoon2Y - offsetY) * TILE_SIZE;
-            g.fillRect(sx + 10, sy + 10, TILE_SIZE - 20, TILE_SIZE - 20);
-        }
+       
         
     }
 }
