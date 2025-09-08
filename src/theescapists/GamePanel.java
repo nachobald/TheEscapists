@@ -31,6 +31,11 @@ public class GamePanel extends JPanel {
     
     //oggetti mappa
     private List<MapItem> mapItems = new ArrayList<>();
+    
+    //messaggi a schermo
+    private String gameMessage = "";
+    private int messageTimer = 0;
+    private boolean showMessage = false;
 
     public GamePanel() {
         setPreferredSize(new Dimension(15 * TILE_SIZE, 15 * TILE_SIZE));
@@ -169,10 +174,22 @@ public class GamePanel extends JPanel {
 
         checkForItems();
     }
+    
+    private void showGameMessage(String msg) {
+    	this.gameMessage = msg;
+        this.showMessage = true;
+
+        //timer 1 secondo
+        new javax.swing.Timer(1500, e -> {
+            showMessage = false;
+            ((javax.swing.Timer)e.getSource()).stop();
+            repaint();
+        }).start();
+    }
 
     private void addItem(Item item) {
         inventory.add(item);
-        System.out.println("Hai raccolto: " + item.getName());
+        showGameMessage("Hai raccolto: " + item.getName());
     }
     
     private void checkForItems() {
@@ -194,7 +211,7 @@ public class GamePanel extends JPanel {
                 if (keyCollected) {
                     gameOver("Complimenti! Sei evaso dalla porta principale!");
                 }else {
-                	System.out.println("La porta è chiusa ti serve la chiave!");
+                	showGameMessage("La porta è chiusa ti serve la chiave!");
                 }
             } else if (map[playerY][playerX] == 'T') {
                 // uscita scavata, non serve la chiave
@@ -217,9 +234,13 @@ public class GamePanel extends JPanel {
     }
 
     public void gameOver(String message) {
-        JOptionPane.showMessageDialog(this, message, "Game Over", JOptionPane.INFORMATION_MESSAGE);
-        SwingUtilities.getWindowAncestor(this).dispose();
-        System.exit(0);
+    	showGameMessage(message);
+        //aspetto un po' per far vedere il messaggio prima di chiudere (3 secondi)
+    	new javax.swing.Timer(2500, e -> {
+            ((javax.swing.Timer)e.getSource()).stop(); //ferma il timer
+            SwingUtilities.getWindowAncestor(this).dispose();
+            System.exit(0);
+        }).start();
     }
 
     public void startGame() {
@@ -255,13 +276,13 @@ public class GamePanel extends JPanel {
                         System.out.println("Hai aperto un varco nel muro!");
                     }
                 } else {
-                    System.out.println("Colpo al muro! Mancano " + wallHealth[ty][tx] + " colpi.");
+                    showGameMessage("Colpo al muro! Mancano " + wallHealth[ty][tx] + " colpi.");
                 }
                 repaint();
                 return;
             }
         }
-        System.out.println("Non ci sono muri da scavare accanto a te.");
+        showGameMessage("Non ci sono muri da scavare accanto a te.");
     }
 
     @Override
@@ -322,7 +343,16 @@ public class GamePanel extends JPanel {
             }
         }
         
-       
-        
+        //disegna messaggi
+        if (showMessage && gameMessage != null) {
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 20));
+            FontMetrics fm = g.getFontMetrics();
+            int textWidth = fm.stringWidth(gameMessage);
+            int x = (getWidth() - textWidth) / 2; //centrato orizzontalmente
+            int y = 50; //altezza fissa dall'alto
+            g.drawString(gameMessage, x, y);
+        }
+               
     }
 }
