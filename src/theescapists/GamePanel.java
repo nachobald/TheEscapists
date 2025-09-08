@@ -63,13 +63,24 @@ public class GamePanel extends JPanel {
         mapItems.add(new MapItem(8, 10, new Spoon(3)));
         mapItems.add(new MapItem(20, 12, new Spoon(3)));
         
-        //posiziona 2 guardie
-        guards.add(new Guard(10, 10));
-        guards.add(new Guard(20, 5));
+        //posiziona guardie
+        spawnGuards(10);
 
         //timer: muove le guardie e controlla le collisioni
         guardTimer = new javax.swing.Timer(450, e -> {
-            for (Guard g : guards) g.move(map);
+        	for (Guard g : guards) {
+        	    int dist = Math.abs(g.getX() - playerX) + Math.abs(g.getY() - playerY);
+        	    if (dist <= 6) {
+        	        //inseguimento
+        	        if (g.getX() < playerX && map[g.getY()][g.getX()+1] != '#') g.setX(g.getX()+1);
+        	        else if (g.getX() > playerX && map[g.getY()][g.getX()-1] != '#') g.setX(g.getX()-1);
+        	        else if (g.getY() < playerY && map[g.getY()+1][g.getX()] != '#') g.setY(g.getY()+1);
+        	        else if (g.getY() > playerY && map[g.getY()-1][g.getX()] != '#') g.setY(g.getY()-1);
+        	    } else {
+        	        // movimento random come prima
+        	        g.move(map);
+        	    }
+        	}
 
         //collisione guardia con player
         for (Guard g : guards) {
@@ -151,6 +162,7 @@ public class GamePanel extends JPanel {
         
     }
     
+    //costruzione celle
     private void buildCell(int startX, int startY, int w, int h) {
         for (int y = startY; y < startY + h; y++) {
             for (int x = startX; x < startX + w; x++) {
@@ -161,6 +173,18 @@ public class GamePanel extends JPanel {
         }
         //porta della cella
         map[startY + 1][startX] = '.'; 
+    }
+    
+    //creazione guardie
+    private void spawnGuards(int count) {
+        for (int i = 0; i < count; i++) {
+            int x, y;
+            do {
+                x = (int)(Math.random() * MAP_WIDTH);
+                y = (int)(Math.random() * MAP_HEIGHT);
+            } while (map[y][x] != '.'); //solo su pavimento
+            guards.add(new Guard(x, y));
+        }
     }
 
     private void movePlayer(int dx, int dy) {

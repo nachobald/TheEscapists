@@ -7,13 +7,26 @@ public class Guard {
 	private int x, y;
     private Random rand = new Random();
 
-    public Guard(int startX, int startY) {
-        this.x = startX;
-        this.y = startY;
+    public Guard(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
 
-    public int getX() { return x; }
-    public int getY() { return y; }
+    public int getX() { 
+    	return x; 
+    }
+    
+    public int getY() { 
+    	return y; 
+    }
+    
+    public void setX(int x) {
+    	this.x = x;
+    }
+    
+    public void setY(int y) {
+    	this.y = y;
+    }
 
     //muove la guardia casualmente di una casella (evita muri)
     public void move(char[][] map) {
