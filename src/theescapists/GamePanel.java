@@ -1,8 +1,12 @@
 package theescapists;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,7 +14,32 @@ public class GamePanel extends JPanel {
     private static final int TILE_SIZE = 32;
     private static final int MAP_WIDTH = 50;
     private static final int MAP_HEIGHT = 30;
-
+    
+    //immagini oggetti
+    private BufferedImage muroTile;
+    private BufferedImage pavimentoTile;
+    private BufferedImage keyTile;
+    private BufferedImage pickaxeTile;
+    
+    //immagini prigioniero
+    private BufferedImage[] playerUp = new BufferedImage[2];
+    private BufferedImage[] playerDown = new BufferedImage[2];
+    private BufferedImage[] playerLeft = new BufferedImage[2];
+    private BufferedImage[] playerRight = new BufferedImage[2];
+    
+    //indica quale frame mostrare(0 o 1)
+    private int playerFrame = 0;
+    private Direction playerDir = Direction.DOWN;
+    
+    //immagini guardia
+    private BufferedImage[] guardUp = new BufferedImage[2];
+    private BufferedImage[] guardDown = new BufferedImage[2];
+    private BufferedImage[] guardLeft = new BufferedImage[2];
+    private BufferedImage[] guardRight = new BufferedImage[2];
+    
+    private int guardFrame = 0; 
+    private Direction guardDir = Direction.DOWN;
+    
     private char[][] map;
     private int playerX = 1, playerY = 1;
 
@@ -34,13 +63,49 @@ public class GamePanel extends JPanel {
     
     //messaggi a schermo
     private String gameMessage = "";
-    private int messageTimer = 0;
     private boolean showMessage = false;
 
     public GamePanel() {
         setPreferredSize(new Dimension(15 * TILE_SIZE, 15 * TILE_SIZE));
         setBackground(Color.BLACK);
 
+        //caricamento immagini
+        try {
+        	//oggetti
+            muroTile = ImageIO.read(getClass().getResource("/theescapists/assets/muro.png"));
+            pavimentoTile = ImageIO.read(getClass().getResource("/theescapists/assets/pavimento.png"));
+            keyTile = ImageIO.read(getClass().getResource("/theescapists/assets/chiave.png"));
+            pickaxeTile = ImageIO.read(getClass().getResource("/theescapists/assets/piccone.png"));
+            
+            //prigioniero
+            playerUp[0] = ImageIO.read(getClass().getResource("/theescapists/assets/prisoner_up_1.png"));
+            playerUp[1] = ImageIO.read(getClass().getResource("/theescapists/assets/prisoner_up_2.png"));
+            
+            playerDown[0] = ImageIO.read(getClass().getResource("/theescapists/assets/prisoner_down_1.png"));
+            playerDown[1] = ImageIO.read(getClass().getResource("/theescapists/assets/prisoner_down_2.png"));
+            
+            playerLeft[0] = ImageIO.read(getClass().getResource("/theescapists/assets/prisoner_left_1.png"));
+            playerLeft[1] = ImageIO.read(getClass().getResource("/theescapists/assets/prisoner_left_2.png"));
+            
+            playerRight[0] = ImageIO.read(getClass().getResource("/theescapists/assets/prisoner_right_1.png"));
+            playerRight[1] = ImageIO.read(getClass().getResource("/theescapists/assets/prisoner_right_2.png"));
+            
+            //guardia
+            guardUp[0] = ImageIO.read(getClass().getResource("/theescapists/assets/guard_up_1.png"));
+            guardUp[1] = ImageIO.read(getClass().getResource("/theescapists/assets/guard_up_2.png"));
+            
+            guardDown[0] = ImageIO.read(getClass().getResource("/theescapists/assets/guard_down_1.png"));
+            guardDown[1] = ImageIO.read(getClass().getResource("/theescapists/assets/guard_down_2.png"));
+            
+            guardLeft[0] = ImageIO.read(getClass().getResource("/theescapists/assets/guard_left_1.png"));
+            guardLeft[1] = ImageIO.read(getClass().getResource("/theescapists/assets/guard_left_2.png"));
+            
+            guardRight[0] = ImageIO.read(getClass().getResource("/theescapists/assets/guard_right_1.png"));
+            guardRight[1] = ImageIO.read(getClass().getResource("/theescapists/assets/guard_right_2.png"));
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
+        
         buildMap();
         
         //uscita principale
@@ -60,38 +125,53 @@ public class GamePanel extends JPanel {
         
         //posiziona oggetti
         mapItems.add(new MapItem(37, 21, new Key()));
-        mapItems.add(new MapItem(8, 10, new Spoon(3)));
-        mapItems.add(new MapItem(20, 12, new Spoon(3)));
+        mapItems.add(new MapItem(8, 10, new Pickaxe(3)));
+        mapItems.add(new MapItem(20, 12, new Pickaxe(3)));
         
         //posiziona guardie
         spawnGuards(10);
-
+        
         //timer: muove le guardie e controlla le collisioni
         guardTimer = new javax.swing.Timer(450, e -> {
-        	for (Guard g : guards) {
-        	    int dist = Math.abs(g.getX() - playerX) + Math.abs(g.getY() - playerY);
-        	    if (dist <= 6) {
-        	        //inseguimento
-        	        if (g.getX() < playerX && map[g.getY()][g.getX()+1] != '#') g.setX(g.getX()+1);
-        	        else if (g.getX() > playerX && map[g.getY()][g.getX()-1] != '#') g.setX(g.getX()-1);
-        	        else if (g.getY() < playerY && map[g.getY()+1][g.getX()] != '#') g.setY(g.getY()+1);
-        	        else if (g.getY() > playerY && map[g.getY()-1][g.getX()] != '#') g.setY(g.getY()-1);
-        	    } else {
-        	        // movimento random come prima
-        	        g.move(map);
-        	    }
-        	}
+            for (Guard g : guards) {
+                int dist = Math.abs(g.getX() - playerX) + Math.abs(g.getY() - playerY);
 
-        //collisione guardia con player
-        for (Guard g : guards) {
-        	if (g.getX() == playerX && g.getY() == playerY) {
-        		gameOver("Sei stato catturato!");
-                return;
+                if (dist <= 6) {
+                    //inseguimento verso il player
+                    if (g.getX() < playerX && map[g.getY()][g.getX() + 1] != '#') {
+                        g.setX(g.getX() + 1);
+                        g.setDirection(Direction.RIGHT);
+                    } else if (g.getX() > playerX && map[g.getY()][g.getX() - 1] != '#') {
+                        g.setX(g.getX() - 1);
+                        g.setDirection(Direction.LEFT);
+                    } else if (g.getY() < playerY && map[g.getY() + 1][g.getX()] != '#') {
+                        g.setY(g.getY() + 1);
+                        g.setDirection(Direction.DOWN);
+                    } else if (g.getY() > playerY && map[g.getY() - 1][g.getX()] != '#') {
+                        g.setY(g.getY() - 1);
+                        g.setDirection(Direction.UP);
+                    }
+                } else {
+                    //movimento random
+                    g.move(map);
+                }
+
+                //alterna il frame (camminata a due sprite)
+                g.toggleFrame();
+            }
+
+            //ollisione guardia con player
+            for (Guard g : guards) {
+                if (g.getX() == playerX && g.getY() == playerY) {
+                    gameOver("Sei stato catturato!");
+                    return;
                 }
             }
+
             repaint();
         });
         guardTimer.start();
+
 
         setFocusable(true);
         requestFocusInWindow();
@@ -106,21 +186,19 @@ public class GamePanel extends JPanel {
                     case KeyEvent.VK_D -> movePlayer(1, 0);
                     case KeyEvent.VK_I -> showInventory();
                     
-                    //per usare il cucchiaio
+                    //per usare il piccone
                     case KeyEvent.VK_SPACE -> {
                         for (Item item : new ArrayList<>(inventory)) {
-                            if (item instanceof Spoon) {
-                                item.use(GamePanel.this); // il cucchiaio sa scavare
+                            if (item instanceof Pickaxe) {
+                                item.use(GamePanel.this); //il piccone sa scavare
                                 break;
                             }
                         }
                     }
-                    
                 }
                 repaint();
             }
         });
-        
     }
 
     private void buildMap() {
@@ -136,7 +214,7 @@ public class GamePanel extends JPanel {
                 }
             }
         }
-
+        
         //corridoio centrale verticale
         int midX = MAP_WIDTH / 2;
         for (int y = 1; y < MAP_HEIGHT - 1; y++) {
@@ -194,8 +272,17 @@ public class GamePanel extends JPanel {
         if (map[newY][newX] != '#') {
             playerX = newX;
             playerY = newY;
-        }
+            
+            //aggiorna la direzione
+            if (dx == 1) playerDir = Direction.RIGHT;
+            else if (dx == -1) playerDir = Direction.LEFT;
+            else if (dy == 1) playerDir = Direction.DOWN;
+            else if (dy == -1) playerDir = Direction.UP;
 
+            //cambia frame per animazione
+            playerFrame = 1 - playerFrame; //alterna tra 0 e 1          
+        }        
+        
         checkForItems();
     }
     
@@ -203,7 +290,7 @@ public class GamePanel extends JPanel {
     	this.gameMessage = msg;
         this.showMessage = true;
 
-        //timer 1 secondo
+        //timer 1.5 secondo
         new javax.swing.Timer(1500, e -> {
             showMessage = false;
             ((javax.swing.Timer)e.getSource()).stop();
@@ -259,7 +346,7 @@ public class GamePanel extends JPanel {
 
     public void gameOver(String message) {
     	showGameMessage(message);
-        //aspetto un po' per far vedere il messaggio prima di chiudere (3 secondi)
+        //aspetto un po' per far vedere il messaggio prima di chiudere (2.5 secondi)
     	new javax.swing.Timer(2500, e -> {
             ((javax.swing.Timer)e.getSource()).stop(); //ferma il timer
             SwingUtilities.getWindowAncestor(this).dispose();
@@ -271,7 +358,7 @@ public class GamePanel extends JPanel {
         requestFocusInWindow();
     }
     
-    public void digWall(Spoon spoon) {
+    public void digWall(Pickaxe spoon) {
         int[][] dirs = {{0,-1},{0,1},{-1,0},{1,0}};
         for (int[] d : dirs) {
             int tx = playerX + d[0];
@@ -282,7 +369,7 @@ public class GamePanel extends JPanel {
                 spoon.reduceDurability();
                 if (spoon.isBroken()) {
                     inventory.remove(spoon);
-                    System.out.println("Il cucchiaio si è rotto!");
+                    showGameMessage("Il piccone si è rotto!");
                 }
 
                 if (wallHealth[ty][tx] <= 0) {
@@ -297,7 +384,7 @@ public class GamePanel extends JPanel {
                     } else {
                         //muro interno: diventa passaggio
                         map[ty][tx] = '.';
-                        System.out.println("Hai aperto un varco nel muro!");
+                        showGameMessage("Hai aperto un varco nel muro!");
                     }
                 } else {
                     showGameMessage("Colpo al muro! Mancano " + wallHealth[ty][tx] + " colpi.");
@@ -315,9 +402,12 @@ public class GamePanel extends JPanel {
 
         int viewCols = getWidth() / TILE_SIZE;
         int viewRows = getHeight() / TILE_SIZE;
+        
+        //offset per centrare il player
         int offsetX = Math.max(0, Math.min(playerX - viewCols / 2, MAP_WIDTH - viewCols));
         int offsetY = Math.max(0, Math.min(playerY - viewRows / 2, MAP_HEIGHT - viewRows));
 
+        //disegno la mappa
         for (int y = 0; y < viewRows; y++) {
             for (int x = 0; x < viewCols; x++) {
                 int mapX = x + offsetX;
@@ -326,43 +416,63 @@ public class GamePanel extends JPanel {
                 if (mapY >= MAP_HEIGHT || mapX >= MAP_WIDTH) continue;
 
                 char tile = map[mapY][mapX];
-                if (tile == '#') g.setColor(Color.DARK_GRAY);
-                else if (tile == 'E') g.setColor(Color.GREEN); 	//porta principale
-                else if (tile == 'T') g.setColor(Color.ORANGE);	//tunnel scavato
-                else g.setColor(Color.LIGHT_GRAY);
-
-                g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                BufferedImage tileImg = null;
+                
+                switch (tile) {
+                case '#' -> tileImg = muroTile;
+                case '.' -> tileImg = pavimentoTile;
+            }
+                
+                if (tileImg != null) {
+                    g.drawImage(tileImg, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, null);
+                } else if (tile == 'E') {
+                    g.setColor(Color.GREEN);
+                    g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                } else if (tile == 'T') {
+                    g.setColor(Color.ORANGE);
+                    g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                }
             }
         }
 
         //disegna player
-        g.setColor(Color.RED);
+        BufferedImage[] playerFrames = switch (playerDir) {
+        case UP -> playerUp;
+        case DOWN -> playerDown;
+        case LEFT -> playerLeft;
+        case RIGHT -> playerRight;
+        };
+
+        //playerFrame alterna tra 0 e 1
         int px = (playerX - offsetX) * TILE_SIZE;
         int py = (playerY - offsetY) * TILE_SIZE;
-        g.fillOval(px + 4, py + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+        g.drawImage(playerFrames[playerFrame], px, py, TILE_SIZE, TILE_SIZE, null);
         
-        //disegna guardia
-        g.setColor(Color.BLUE);
+        //disegna guardie
         for (Guard guard : guards) {
+            BufferedImage[] guardFrames = switch (guard.getDirection()) {
+                case UP -> guardUp;
+                case DOWN -> guardDown;
+                case LEFT -> guardLeft;
+                case RIGHT -> guardRight;
+            };
+
             int gx = (guard.getX() - offsetX) * TILE_SIZE;
             int gy = (guard.getY() - offsetY) * TILE_SIZE;
-            g.fillRect(gx + 4, gy + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+
+            g.drawImage(guardFrames[guard.getFrame()], gx, gy, TILE_SIZE, TILE_SIZE, null);
         }
         
         //disegna oggetti
         for (MapItem mi : mapItems) {
             if (!mi.isCollected()) {
+                int ix = (mi.getX() - offsetX) * TILE_SIZE;
+                int iy = (mi.getY() - offsetY) * TILE_SIZE;
+
                 if (mi.getItem() instanceof Key) {
-                    g.setColor(Color.YELLOW);
-                    int ix = (mi.getX() - offsetX) * TILE_SIZE;
-                    int iy = (mi.getY() - offsetY) * TILE_SIZE;
-                    g.fillOval(ix + 8, iy + 8, TILE_SIZE - 16, TILE_SIZE - 16);
-                }
-                else if (mi.getItem() instanceof Spoon) {
-                    g.setColor(Color.ORANGE);
-                    int ix = (mi.getX() - offsetX) * TILE_SIZE;
-                    int iy = (mi.getY() - offsetY) * TILE_SIZE;
-                    g.fillRect(ix + 10, iy + 10, TILE_SIZE - 20, TILE_SIZE - 20);
+                    g.drawImage(keyTile, ix, iy, TILE_SIZE, TILE_SIZE, null); //immagine chiave
+                } else if (mi.getItem() instanceof Pickaxe) {
+                	g.drawImage(pickaxeTile, ix, iy, TILE_SIZE, TILE_SIZE, null); //immagine piccone
                 }
             }
         }

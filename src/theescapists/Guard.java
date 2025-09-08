@@ -6,6 +6,8 @@ public class Guard {
 	
 	private int x, y;
     private Random rand = new Random();
+    private Direction dir = Direction.DOWN;
+    private int frame = 0;
 
     public Guard(int x, int y) {
         this.x = x;
@@ -45,6 +47,22 @@ public class Guard {
             x = newX;
             y = newY;
         }
+    }
+    
+    public Direction getDirection() { 
+    	return dir; 
+    }
+    
+    public void setDirection(Direction d) { 
+    	this.dir = d; 
+    }
+
+    public int getFrame() {
+    	return frame; 
+    }
+    
+    public void toggleFrame() { 
+    	frame = 1 - frame; 
     }
     
 }

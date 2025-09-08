@@ -1,11 +1,11 @@
 package theescapists;
 
-public class Spoon extends Item{
+public class Pickaxe extends Item{
 
 	private int durability;
 
-    public Spoon(int durability) {
-        super("Cucchiaio");
+    public Pickaxe(int durability) {
+        super("Piccone");
         this.durability = durability;
     }
 
