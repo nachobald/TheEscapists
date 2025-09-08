@@ -8,6 +8,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class GamePanel extends JPanel {
@@ -20,6 +21,11 @@ public class GamePanel extends JPanel {
     private BufferedImage pavimentoTile;
     private BufferedImage keyTile;
     private BufferedImage pickaxeTile;
+    private BufferedImage lanternTile;
+    private BufferedImage treeTile;
+    private BufferedImage doorTile;
+    private BufferedImage chestTile;
+    private BufferedImage grassTile;
     
     //immagini prigioniero
     private BufferedImage[] playerUp = new BufferedImage[2];
@@ -37,8 +43,12 @@ public class GamePanel extends JPanel {
     private BufferedImage[] guardLeft = new BufferedImage[2];
     private BufferedImage[] guardRight = new BufferedImage[2];
     
+    //indica quale frame mostrare(0 o 1)
     private int guardFrame = 0; 
     private Direction guardDir = Direction.DOWN;
+    
+    //mostra l'inventario
+    private boolean showInventoryOverlay = false;
     
     private char[][] map;
     private int playerX = 1, playerY = 1;
@@ -55,15 +65,20 @@ public class GamePanel extends JPanel {
     private ArrayList<Guard> guards = new ArrayList<>();
     private javax.swing.Timer guardTimer;
 
-    //inventario
-    private List<Item> inventory = new ArrayList<>();
     
-    //oggetti mappa
-    private List<MapItem> mapItems = new ArrayList<>();
+    private List<Item> inventory = new ArrayList<>(); 			//inventario
+    private List<MapItem> mapItems = new ArrayList<>();			//oggetti mappa
+    private List<Point> lanternPositions = new ArrayList<>();	//lanterne
+    private List<Point> treePositions = new ArrayList<>(); 		//alberi
+    private List<Rectangle> cells = new ArrayList<>();			//rettangolo formato dalle celle
+    private List<Point> chestPositions = new ArrayList<>();		//cesta della cella
+    private List<Point> grassPositions = new ArrayList<>();		//erba
     
     //messaggi a schermo
     private String gameMessage = "";
     private boolean showMessage = false;
+    
+    private boolean gameOverMessage = false;
 
     public GamePanel() {
         setPreferredSize(new Dimension(15 * TILE_SIZE, 15 * TILE_SIZE));
@@ -72,10 +87,15 @@ public class GamePanel extends JPanel {
         //caricamento immagini
         try {
         	//oggetti
-            muroTile = ImageIO.read(getClass().getResource("/theescapists/assets/muro.png"));
-            pavimentoTile = ImageIO.read(getClass().getResource("/theescapists/assets/pavimento.png"));
-            keyTile = ImageIO.read(getClass().getResource("/theescapists/assets/chiave.png"));
-            pickaxeTile = ImageIO.read(getClass().getResource("/theescapists/assets/piccone.png"));
+            muroTile = ImageIO.read(getClass().getResource("/theescapists/assets/wall.png"));
+            pavimentoTile = ImageIO.read(getClass().getResource("/theescapists/assets/flooring.png"));
+            keyTile = ImageIO.read(getClass().getResource("/theescapists/assets/key.png"));
+            pickaxeTile = ImageIO.read(getClass().getResource("/theescapists/assets/pickaxe.png"));
+            lanternTile = ImageIO.read(getClass().getResource("/theescapists/assets/lantern.png"));
+            treeTile = ImageIO.read(getClass().getResource("/theescapists/assets/tree.png"));
+            doorTile = ImageIO.read(getClass().getResource("/theescapists/assets/door.png"));
+            chestTile = ImageIO.read(getClass().getResource("/theescapists/assets/chest.png"));
+            grassTile = ImageIO.read(getClass().getResource("/theescapists/assets/grass.png"));
             
             //prigioniero
             playerUp[0] = ImageIO.read(getClass().getResource("/theescapists/assets/prisoner_up_1.png"));
@@ -106,7 +126,10 @@ public class GamePanel extends JPanel {
             e.printStackTrace();
         }
         
-        buildMap();
+        buildMap();  
+        initLanternsBorders();
+        initTrees(50);
+        initGrass();
         
         //uscita principale
         exitX = MAP_WIDTH - 2;
@@ -160,7 +183,7 @@ public class GamePanel extends JPanel {
                 g.toggleFrame();
             }
 
-            //ollisione guardia con player
+            //collisione guardia con player
             for (Guard g : guards) {
                 if (g.getX() == playerX && g.getY() == playerY) {
                     gameOver("Sei stato catturato!");
@@ -184,7 +207,8 @@ public class GamePanel extends JPanel {
                     case KeyEvent.VK_S -> movePlayer(0, 1);
                     case KeyEvent.VK_A -> movePlayer(-1, 0);
                     case KeyEvent.VK_D -> movePlayer(1, 0);
-                    case KeyEvent.VK_I -> showInventory();
+                    case KeyEvent.VK_I -> { showInventoryOverlay = !showInventoryOverlay; //attiva/disattiva overlay
+                    repaint();}
                     
                     //per usare il piccone
                     case KeyEvent.VK_SPACE -> {
@@ -234,7 +258,7 @@ public class GamePanel extends JPanel {
                 buildCell(x, y, 5, 4);
             }
         }
-
+       
         //uscita principale
         map[1][MAP_WIDTH - 2] = 'E';
         
@@ -242,6 +266,7 @@ public class GamePanel extends JPanel {
     
     //costruzione celle
     private void buildCell(int startX, int startY, int w, int h) {
+    	cells.add(new Rectangle(startX, startY, w, h));
         for (int y = startY; y < startY + h; y++) {
             for (int x = startX; x < startX + w; x++) {
                 if (y == startY || y == startY + h - 1 || x == startX || x == startX + w - 1) {
@@ -251,6 +276,88 @@ public class GamePanel extends JPanel {
         }
         //porta della cella
         map[startY + 1][startX] = '.'; 
+        
+        //cesta della cella
+        int chestX = startX + w / 2;
+        int chestY = startY + h / 2;
+        chestPositions.add(new Point(chestX, chestY));
+    }
+    
+    //posizionamento lampade
+    private void initLanternsBorders() {
+    	lanternPositions.clear();
+        int margin = 2; //distanza dai bordi
+
+        //angolo in basso a sinistra
+        lanternPositions.add(new Point(margin, MAP_HEIGHT - 1 - margin));
+
+        //angolo in basso a destra
+        lanternPositions.add(new Point(MAP_WIDTH - 1 - margin, MAP_HEIGHT - 1 - margin));
+    }
+    
+    //posizionamento alberi
+    private void initTrees(int count) {
+    	treePositions.clear();
+        
+        int startX = 3, endX = MAP_WIDTH - 3;
+        int startY = 3, endY = MAP_HEIGHT - 3;
+        int step = 5; //intervallo tra gli alberi
+        int midX = MAP_WIDTH / 2;
+
+        for (int y = startY; y <= endY; y += step) {
+            for (int x = startX; x <= endX; x += step) {
+                //salta la zona centrale (4 tile centrali)
+                if (Math.abs(x - midX) <= 2) continue;
+
+                if (map[y][x] == '.' && !isInsideCell(x, y)) {
+                    treePositions.add(new Point(x, y));
+                }
+            }
+        } 
+    }
+    
+    private void initGrass() {
+    	grassPositions.clear();
+
+        int midX = MAP_WIDTH / 2;
+
+        //colonna centrale più tre verso sx
+        int[] offsets = {0, -1, -2, -3}; // centrale + 3 verso sinistra
+        for (int y = 1; y < MAP_HEIGHT - 1; y++) {
+            for (int dx : offsets) {
+                int x = midX + dx;
+                if (map[y][x] == '.' && !isOccupiedByTreeOrChest(x, y)) {
+                    grassPositions.add(new Point(x, y));
+                }
+            }
+        }
+
+        //fondo della mappa
+        int lastCellRow = 24; 
+        for (int y = lastCellRow; y < MAP_HEIGHT - 1; y++) {
+            for (int x = 1; x < MAP_WIDTH - 1; x++) {
+                if (map[y][x] == '.' && !isOccupiedByTreeOrChest(x, y)) {
+                    grassPositions.add(new Point(x, y));
+                }
+            }
+        }
+    }
+    
+    private boolean isOccupiedByTreeOrChest(int x, int y) {
+        for (Point p : treePositions) {
+            if (p.x == x && p.y == y) return true;
+        }
+        for (Point p : chestPositions) {
+            if (p.x == x && p.y == y) return true;
+        }
+        return false;
+    }
+    
+    private boolean isInsideCell(int x, int y) {
+        for (Rectangle cell : cells) {
+            if (cell.contains(x, y)) return true;
+        }
+        return false;
     }
     
     //creazione guardie
@@ -292,7 +399,10 @@ public class GamePanel extends JPanel {
 
         //timer 1.5 secondo
         new javax.swing.Timer(1500, e -> {
-            showMessage = false;
+        	if (!gameOverMessage) {   //non spegnere se è un messaggio di vittoria
+                showMessage = false;
+                repaint();
+            }
             ((javax.swing.Timer)e.getSource()).stop();
             repaint();
         }).start();
@@ -345,8 +455,12 @@ public class GamePanel extends JPanel {
     }
 
     public void gameOver(String message) {
-    	showGameMessage(message);
-        //aspetto un po' per far vedere il messaggio prima di chiudere (2.5 secondi)
+    	gameMessage = message;
+    	gameOverMessage = true;
+    	showMessage = true;
+    	repaint();
+    	
+        //aspetto 2.5 secondi e poi chiudo
     	new javax.swing.Timer(2500, e -> {
             ((javax.swing.Timer)e.getSource()).stop(); //ferma il timer
             SwingUtilities.getWindowAncestor(this).dispose();
@@ -370,6 +484,8 @@ public class GamePanel extends JPanel {
                 if (spoon.isBroken()) {
                     inventory.remove(spoon);
                     showGameMessage("Il piccone si è rotto!");
+                } else {
+                    showGameMessage("Hai scavato! Utilizzi rimasti: " + spoon.getDurability());
                 }
 
                 if (wallHealth[ty][tx] <= 0) {
@@ -434,13 +550,62 @@ public class GamePanel extends JPanel {
                 }
             }
         }
+        
+        //erba
+        for (Point p : grassPositions) {
+            int gx = (p.x - offsetX) * TILE_SIZE;
+            int gy = (p.y - offsetY) * TILE_SIZE;
+            g.drawImage(grassTile, gx, gy, TILE_SIZE, TILE_SIZE, null);
+        }
+        
+        //alberi
+        for (Point p : treePositions) {
+            int tx = (p.x - offsetX) * TILE_SIZE;
+            int ty = (p.y - offsetY) * TILE_SIZE;
+            g.drawImage(treeTile, tx, ty, TILE_SIZE, TILE_SIZE, null);
+        }
+        
+        //lanterne
+        for (Point p : lanternPositions) {
+            int lx = (p.x - offsetX) * TILE_SIZE;
+            int ly = (p.y - offsetY) * TILE_SIZE;
+            g.drawImage(lanternTile, lx, ly, TILE_SIZE, TILE_SIZE, null);
+        }
+        
+        //cesta nella cella
+        for (Point p : chestPositions) {
+            int cx = (p.x - offsetX) * TILE_SIZE;
+            int cy = (p.y - offsetY) * TILE_SIZE;
+            g.drawImage(chestTile, cx, cy, TILE_SIZE, TILE_SIZE, null);
+        }
+        
+        //porta uscita
+        if (map[exitY][exitX] == 'E') {
+            int dx = (exitX - offsetX) * TILE_SIZE;
+            int dy = (exitY - offsetY) * TILE_SIZE;
+            g.drawImage(doorTile, dx, dy, TILE_SIZE, TILE_SIZE, null);
+        }
+        
+        //disegna oggetti
+        for (MapItem mi : mapItems) {
+            if (!mi.isCollected()) {
+                int ix = (mi.getX() - offsetX) * TILE_SIZE;
+                int iy = (mi.getY() - offsetY) * TILE_SIZE;
 
-        //disegna player
+                if (mi.getItem() instanceof Key) {
+                    g.drawImage(keyTile, ix, iy, TILE_SIZE, TILE_SIZE, null); //immagine chiave
+                } else if (mi.getItem() instanceof Pickaxe) {
+                	g.drawImage(pickaxeTile, ix, iy, TILE_SIZE, TILE_SIZE, null); //immagine piccone
+                }
+            }
+        }
+        
+      //disegna player
         BufferedImage[] playerFrames = switch (playerDir) {
-        case UP -> playerUp;
-        case DOWN -> playerDown;
-        case LEFT -> playerLeft;
-        case RIGHT -> playerRight;
+        	case UP -> playerUp;
+        	case DOWN -> playerDown;
+        	case LEFT -> playerLeft;
+        	case RIGHT -> playerRight;
         };
 
         //playerFrame alterna tra 0 e 1
@@ -463,17 +628,54 @@ public class GamePanel extends JPanel {
             g.drawImage(guardFrames[guard.getFrame()], gx, gy, TILE_SIZE, TILE_SIZE, null);
         }
         
-        //disegna oggetti
-        for (MapItem mi : mapItems) {
-            if (!mi.isCollected()) {
-                int ix = (mi.getX() - offsetX) * TILE_SIZE;
-                int iy = (mi.getY() - offsetY) * TILE_SIZE;
+        //disegna inventario se attivo
+        if (showInventoryOverlay) {
+            int overlayWidth = 220;
+            int overlayHeight = inventory.isEmpty() ? 60 : inventory.size() * 40 + 40;
+            int marginTop = 40;
+            int marginRight = 20;
 
-                if (mi.getItem() instanceof Key) {
-                    g.drawImage(keyTile, ix, iy, TILE_SIZE, TILE_SIZE, null); //immagine chiave
-                } else if (mi.getItem() instanceof Pickaxe) {
-                	g.drawImage(pickaxeTile, ix, iy, TILE_SIZE, TILE_SIZE, null); //immagine piccone
+            int x = getWidth() - overlayWidth - marginRight;
+            int y = marginTop;
+
+            //sfondo semitrasparente
+            g.setColor(new Color(0, 0, 0, 180));
+            g.fillRoundRect(x, y, overlayWidth, overlayHeight, 15, 15);
+
+            //titolo
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 16));
+            g.drawString("Inventario", x + 10, y + 25);
+
+            //oggetti
+            int slotSize = 32;
+            int padding = 8;
+            int itemY = y + 40;
+
+            for (Item item : inventory) {
+                //slot background
+                g.setColor(new Color(50, 50, 50, 200));
+                g.fillRect(x + 10, itemY, slotSize, slotSize);
+                g.setColor(Color.WHITE);
+                g.drawRect(x + 10, itemY, slotSize, slotSize);
+
+                //icona oggetto
+                if (item instanceof Key) {
+                    g.drawImage(keyTile, x + 12, itemY + 2, slotSize - 4, slotSize - 4, null);
+                } else if (item instanceof Pickaxe) {
+                    g.drawImage(pickaxeTile, x + 12, itemY + 2, slotSize - 4, slotSize - 4, null);
                 }
+
+                //nome oggetto
+                g.setColor(Color.WHITE);
+                g.setFont(new Font("Arial", Font.PLAIN, 14));
+                String label = item.getName();	
+                if (item instanceof Pickaxe pickaxe) {
+                    label += " (" + pickaxe.getDurability() + "/" + 3 + ")";
+                }
+                g.drawString(label, x + slotSize + 20, itemY + slotSize / 2 + 5);
+                
+                itemY += slotSize + padding;	//sposto per oggetto successivo
             }
         }
         
@@ -486,7 +688,6 @@ public class GamePanel extends JPanel {
             int x = (getWidth() - textWidth) / 2; //centrato orizzontalmente
             int y = 50; //altezza fissa dall'alto
             g.drawString(gameMessage, x, y);
-        }
-               
+        }    
     }
 }
