@@ -14,6 +14,6 @@ public abstract class Item {
 	
 	public abstract String getDescription();
 	
-	public abstract void use(GamePanel game);
+	public abstract void use(GameModel game);
 	
 }

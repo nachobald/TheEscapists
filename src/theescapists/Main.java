@@ -1,24 +1,32 @@
 package theescapists;
 
-import javax.swing.JFrame;
+import javax.swing.*;
 
 public class Main {
-	
-	public static void main(String[] args) {
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            //model
+            GameModel model = new GameModel();
 
-		JFrame frame = new JFrame("TheEscapists");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setResizable(false);
+            //view
+            GameView view = new GameView(model);
 
-		GamePanel panel = new GamePanel(); //senza parametri
-        frame.add(panel);
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
+            //controller
+            GameController controller = new GameController(model, view);
 
-		panel.startGame(); //mette il focus sulla finestra
-		    }
-		
+            //collego il controller al codel per gli item
+            model.setController(controller);
 
-	
+            //JFrame
+            JFrame frame = new JFrame("TheEscapists MVC");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setResizable(false);
+            frame.add(view);
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+
+            view.requestFocusInWindow();
+        });
+    }
 }

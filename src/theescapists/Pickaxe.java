@@ -27,8 +27,10 @@ public class Pickaxe extends Item{
 	}
 
 	@Override
-	public void use(GamePanel game) {
-		game.digWall(this);	
+	public void use(GameModel model) {
+		if (model.getController() != null) {
+            model.getController().digWall(this);
+        }
 	}
 	
 }

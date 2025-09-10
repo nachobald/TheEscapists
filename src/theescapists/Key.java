@@ -12,7 +12,7 @@ public class Key extends Item {
     }
     
     @Override
-    public void use(GamePanel game) {
+    public void use(GameModel game) {
         System.out.println("Hai la chiave: puoi aprire l’uscita principale!");
     }
 	

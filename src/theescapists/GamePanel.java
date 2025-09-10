@@ -1,4 +1,4 @@
-package theescapists;
+/*package theescapists;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -690,4 +690,4 @@ public class GamePanel extends JPanel {
             g.drawString(gameMessage, x, y);
         }    
     }
-}
+}*/

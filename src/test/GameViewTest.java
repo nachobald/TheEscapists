@@ -1,0 +1,56 @@
+package test;
+
+import theescapists.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.awt.Point;
+import java.util.List;
+
+public class GameViewTest {
+
+	@Test
+    void testInventoryOverlay() {
+        GameModel model = new GameModel();
+        GameView view = new GameView(model);
+
+        assertFalse(model.isShowInventoryOverlay());
+        model.toggleInventoryOverlay();
+        assertTrue(model.isShowInventoryOverlay());
+        model.toggleInventoryOverlay();
+        assertFalse(model.isShowInventoryOverlay());
+    }
+
+    @Test
+    void testGameMessage() {
+        GameModel model = new GameModel();
+        GameView view = new GameView(model);
+
+        model.setGameMessage("Test messaggio");
+        assertTrue(model.isShowMessage());
+        assertEquals("Test messaggio", model.getGameMessage());
+
+        // simula il passare del tempo per nascondere il messaggio
+        model.updateMessage();
+        // Dopo 1,5 sec il messaggio sparisce (puoi testarlo con Thread.sleep)
+        // Attenzione: non ideale nei test unitari, ma funziona per demo
+    }
+
+    @Test
+    void testMapElementsPositions() {
+        GameModel model = new GameModel();
+        GameView view = new GameView(model);
+
+        List<Point> trees = model.getTreePositions();
+        List<Point> lanterns = model.getLanternPositions();
+        List<Point> chests = model.getChestPositions();
+
+        assertNotNull(trees);
+        assertNotNull(lanterns);
+        assertNotNull(chests);
+        assertTrue(trees.size() > 0);
+        assertTrue(lanterns.size() > 0);
+        assertTrue(chests.size() > 0);
+    }
+	
+}
+
