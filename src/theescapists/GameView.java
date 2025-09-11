@@ -76,8 +76,9 @@ public class GameView extends JPanel {
         super.paintComponent(g);
 
         char[][] map = model.getMap();
-        int playerX = model.getPlayerX();
-        int playerY = model.getPlayerY();
+        Player player = model.getPlayer();
+        int playerX = player.getX();
+        int playerY = player.getY();
 
         //calcolo offset telecamera
         int camX = playerX * TILE_SIZE - SCREEN_WIDTH / 2;
@@ -114,13 +115,14 @@ public class GameView extends JPanel {
         }
 
         //player
-        BufferedImage[] pFrames = switch (model.getPlayerDir()) {
+        BufferedImage[] pFrames = switch (player.getDir()) {
             case UP -> playerUp;
             case DOWN -> playerDown;
             case LEFT -> playerLeft;
             case RIGHT -> playerRight;
         };
-        g.drawImage(pFrames[model.getPlayerFrame()], playerX*TILE_SIZE - camX, playerY*TILE_SIZE - camY, TILE_SIZE, TILE_SIZE, null);
+        
+        g.drawImage(pFrames[player.getFrame()], playerX*TILE_SIZE - camX, playerY*TILE_SIZE - camY, TILE_SIZE, TILE_SIZE, null);
 
         //guardie
         for (Guard guard : model.getGuards()) {

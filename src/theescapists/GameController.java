@@ -44,22 +44,25 @@ public class GameController {
 
     //movimento player
     private void movePlayer(int dx, int dy) {
-        int newX = model.getPlayerX() + dx;
-        int newY = model.getPlayerY() + dy;
-
-        char[][] map = model.getMap();
+    	Player player = model.getPlayer();                          
+        char[][] map = model.getMap();                             
+        int newX = player.getX() + dx;
+        int newY = player.getY() + dy;
         if(map[newY][newX] != '#') {
-            model.setPlayerPosition(newX,newY);
+            player.setX(newX);                                
+            player.setY(newY);
 
-            if(dx==1) model.setPlayerDir(Direction.RIGHT);
-            else if(dx==-1) model.setPlayerDir(Direction.LEFT);
-            else if(dy==1) model.setPlayerDir(Direction.DOWN);
-            else if(dy==-1) model.setPlayerDir(Direction.UP);
+            if(dx==1) player.setDir(Direction.RIGHT);                
+            else if(dx==-1) player.setDir(Direction.LEFT);
+            else if(dy==1) player.setDir(Direction.DOWN);
+            else if(dy==-1) player.setDir(Direction.UP);
 
-            model.togglePlayerFrame();
+            player.toggleFrame();                                      
         }
 
         checkForItems();
+        model.updateMessage();
+        view.repaint();
     }
 
     private void toggleInventory() {
@@ -78,8 +81,9 @@ public class GameController {
 
     //raccolta oggetti e uscita
     private void checkForItems() {
+    	Player player = model.getPlayer();                            
         for(MapItem mi : model.getMapItems()) {
-            if(!mi.isCollected() && model.getPlayerX()==mi.getX() && model.getPlayerY()==mi.getY()) {
+            if(!mi.isCollected() && player.getX()==mi.getX() && player.getY()==mi.getY()) {  
                 model.getInventory().add(mi.getItem());
                 mi.collect();
                 model.setGameMessage("Hai raccolto: " + mi.getItem().getName());
@@ -87,8 +91,8 @@ public class GameController {
             }
         }
 
-        int px = model.getPlayerX();
-        int py = model.getPlayerY();
+        int px = player.getX();                                         
+        int py = player.getY();                                         
         if(model.getMap()[py][px]=='E') {
             if(px==model.getExitX() && py==model.getExitY()) {
                 if(model.isKeyCollected()) gameOver("Complimenti! Sei evaso dalla porta principale!");
@@ -99,27 +103,23 @@ public class GameController {
 
     //piccone
     public void digWall(Pickaxe pickaxe) {
-        int[][] dirs = {{0,-1},{0,1},{-1,0},{1,0}};
-        int px = model.getPlayerX();
-        int py = model.getPlayerY();
+    	Player player = model.getPlayer();                               // MODIFICA: usa Player
+        int px = player.getX();
+        int py = player.getY();
         char[][] map = model.getMap();
         int[][] health = model.getWallHealth();
-
-        for(int[] d : dirs) {
+        for(int[] d : new int[][] {{0,-1},{0,1},{-1,0},{1,0}}) {
             int tx = px+d[0];
             int ty = py+d[1];
-
             if(map[ty][tx]=='#') {
                 health[ty][tx]--;
                 pickaxe.reduceDurability();
-
                 if(pickaxe.isBroken()) {
                     model.getInventory().remove(pickaxe);
                     model.setGameMessage("Il piccone si è rotto!");
                 } else {
                     model.setGameMessage("Hai scavato! Utilizzi rimasti: "+pickaxe.getDurability());
                 }
-
                 if(health[ty][tx]<=0) {
                     boolean isBorder = (tx==0||ty==0||tx==GameModel.MAP_WIDTH-1||ty==GameModel.MAP_HEIGHT-1);
                     if(isBorder) {
@@ -138,15 +138,16 @@ public class GameController {
 
     //timer guardie per muoversi
     private void startGuardTimer() {
-        guardTimer = new Timer(450, e -> {
+    	guardTimer = new Timer(450, e -> {
+            Player player = model.getPlayer();                          
             for(Guard g : model.getGuards()) {
-                moveGuard(g);
+                moveGuard(g, player);                                    
                 g.toggleFrame();
             }
 
-            // ollisione guardia-player
+            // collisione guardia-player
             for(Guard g : model.getGuards()) {
-                if(g.getX()==model.getPlayerX() && g.getY()==model.getPlayerY()) {
+                if(g.getX()==player.getX() && g.getY()==player.getY()) {  
                     gameOver("Sei stato catturato!");
                     return;
                 }
@@ -157,9 +158,9 @@ public class GameController {
         guardTimer.start();
     }
 
-    private void moveGuard(Guard g) {
-        int px = model.getPlayerX();
-        int py = model.getPlayerY();
+    private void moveGuard(Guard g, Player player) {
+        int px = player.getX();
+        int py = player.getY();
         char[][] map = model.getMap();
         int dist = Math.abs(g.getX()-px)+Math.abs(g.getY()-py);
 

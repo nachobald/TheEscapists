@@ -12,9 +12,7 @@ public class GameModel {
     private char[][] map;
 
     //player
-    private int playerX = 1, playerY = 1;
-    private Direction playerDir = Direction.DOWN;
-    private int playerFrame = 0;
+    private Player player = new Player(1, 1);
 
     //stato chiave
     private boolean keyCollected = false;
@@ -59,7 +57,7 @@ public class GameModel {
         buildMap();
         buildWallHealth();
         spawnMapItems();
-        spawnGuards(10);
+        spawnGuards(20);
         initTrees();
         initLanterns();
         initGrass();
@@ -171,34 +169,25 @@ public class GameModel {
                 if (map[y][midX + dx] == '.') grassPositions.add(new Point(midX + dx, y));
         
     }
+    
+    public Player getPlayer() { 
+    	return player; 
+    }
 
-    //getters e setters
     public char[][] getMap() { 
     	return map; 
     }
     
     public int getPlayerX() { 
-    	return playerX; 
+    	return player.getX(); 
     }
     
     public int getPlayerY() { 
-    	return playerY; 
+    	return player.getY(); 
     }
     
-    public void setPlayerPosition(int x, int y) { 
-    	playerX = x; 
-    	playerY = y; 
-    }
     public Direction getPlayerDir() { 
-    	return playerDir; 
-    }
-    
-    public void setPlayerDir(Direction dir) { 
-    	playerDir = dir; 
-    }
-    
-    public int getPlayerFrame() { 
-    	return playerFrame;
+    	return player.getDir(); 
     }
     
     public void setGameOverMessage(boolean b) { 
@@ -306,11 +295,7 @@ public class GameModel {
     public boolean isKeyCollected() { 
     	return keyCollected; 
     }
-    
-    //per animazione movimento
-    public void togglePlayerFrame() { 
-    	playerFrame = 1 - playerFrame; 
-    }
+
     
 }
 

@@ -23,16 +23,18 @@ class GameModelTest {
 
     @Test
     public void testPlayerMovementSimulation() {
-        int startX = model.getPlayerX();
-        int startY = model.getPlayerY();
+    	Player player = model.getPlayer(); 
 
+    	int startX = player.getX();
+        int startY = player.getY();
+    	
         //simulo uno spostamento verso destra
-        model.setPlayerPosition(startX + 1, startY);
+        player.setPosition(startX + 1, startY);
         assertEquals(startX + 1, model.getPlayerX());
         assertEquals(startY, model.getPlayerY());
 
         //simulo uno spostamento verso il basso
-        model.setPlayerPosition(model.getPlayerX(), startY + 1);
+        player.setPosition(model.getPlayerX(), startY + 1);
         assertEquals(startX + 1, model.getPlayerX());
         assertEquals(startY + 1, model.getPlayerY());
     }

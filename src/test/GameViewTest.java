@@ -29,10 +29,9 @@ public class GameViewTest {
         assertTrue(model.isShowMessage());
         assertEquals("Test messaggio", model.getGameMessage());
 
-        // simula il passare del tempo per nascondere il messaggio
+        //simula il passare del tempo per nascondere il messaggio
         model.updateMessage();
-        // Dopo 1,5 sec il messaggio sparisce (puoi testarlo con Thread.sleep)
-        // Attenzione: non ideale nei test unitari, ma funziona per demo
+        
     }
 
     @Test
