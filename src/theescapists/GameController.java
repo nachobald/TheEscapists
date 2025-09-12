@@ -71,7 +71,7 @@ public class GameController {
     }
 
     private void usePickaxe() {
-        for(Item item : new ArrayList<>(model.getInventory())) {
+        for(Item item : new ArrayList<>(model.getInventory().getItems())) {
             if(item instanceof Pickaxe p) {
                 digWall(p);
                 break;

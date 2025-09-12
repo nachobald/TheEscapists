@@ -174,17 +174,20 @@ public class GameView extends JPanel {
     
     //disegna inventario
     private void drawInventory(Graphics g) {
-        List<Item> inventory = model.getInventory();
+        List<Item> inventory = model.getInventory().getItems();
         int overlayWidth = 220;
+        //calcola altezza in base al numero di Items
         int overlayHeight = inventory.isEmpty() ? 60 : inventory.size() * 40 + 40;
         int marginTop = 40;
         int marginRight = 20;
-        int x = getWidth() - overlayWidth - marginRight;
-        int y = marginTop;
+        int x = getWidth() - overlayWidth - marginRight; //destra dello schermo
+        int y = marginTop;								 //alto dello schermo
 
+        //sfondo semi-trasparente
         g.setColor(new Color(0,0,0,180));
         g.fillRoundRect(x,y,overlayWidth,overlayHeight,15,15);
 
+        //titolo
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD,16));
         g.drawString("Inventario", x+10, y+25);
@@ -196,13 +199,16 @@ public class GameView extends JPanel {
             g.setColor(Color.WHITE);
             g.drawRect(x+10, itemY, 32,32);
 
+            //immagine
             if(item instanceof Key) g.drawImage(keyTile,x+12,itemY+2,28,28,null);
             else if(item instanceof Pickaxe) g.drawImage(pickaxeTile,x+12,itemY+2,28,28,null);
 
+            //testo a dx dell'immagine
             g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.PLAIN,14));
+            g.setFont(new Font("Arial", Font.PLAIN,14));           
             String label = item.getName();
             if(item instanceof Pickaxe p) label += " ("+p.getDurability()+"/3)";
+            //posizione testo: x + 32 (larghezza icona) + 20 (spazio)
             g.drawString(label,x+32+20,itemY+32/2+5);
 
             itemY += 32 + 8;

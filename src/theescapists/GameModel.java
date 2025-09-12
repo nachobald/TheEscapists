@@ -26,7 +26,9 @@ public class GameModel {
 
     //oggetti
     private List<MapItem> mapItems = new ArrayList<>();
-    private List<Item> inventory = new ArrayList<>();
+    
+    //inventario
+    private Inventory inventory = new Inventory();
 
     //guardie
     private List<Guard> guards = new ArrayList<>();
@@ -57,7 +59,7 @@ public class GameModel {
         buildMap();
         buildWallHealth();
         spawnMapItems();
-        spawnGuards(20);
+        spawnGuards(15);
         initTrees();
         initLanterns();
         initGrass();
@@ -234,8 +236,8 @@ public class GameModel {
     	return mapItems; 
     }
     
-    public List<Item> getInventory() { 
-    	return inventory; 
+    public Inventory getInventory() { 
+        return inventory; 
     }
     
     public List<Point> getTreePositions() { 
