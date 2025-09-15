@@ -17,7 +17,7 @@ class KeyTest {
     void testUseMethod() {
         GameModel model = new GameModel();
         Key key = new Key();
-        key.use(model); // stampa solo messaggio
+        key.use(model);
     }
 	
 }

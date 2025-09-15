@@ -14,7 +14,7 @@ public class Main {
             //controller
             GameController controller = new GameController(model, view);
 
-            //collego il controller al codel per gli item
+            //collego il controller al model per gli Item
             model.setController(controller);
 
             //JFrame

@@ -25,7 +25,7 @@ class PickaxeTest {
         Pickaxe pickaxe = new Pickaxe(3);
         model.getInventory().add(pickaxe);
 
-        pickaxe.use(model); //chiama digWall nel controller se presente
+        pickaxe.use(model); //chiama digWall nel controller
        
     }
 

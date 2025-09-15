@@ -34,7 +34,7 @@ public class Guard {
     public void move(char[][] map) {
         int newX = x;
         int newY = y;
-        int dir = rand.nextInt(4); // 0=w, 1=s, 2=a, 3=d
+        int dir = rand.nextInt(4); //0=w, 1=s, 2=a, 3=d
 
         switch (dir) {
             case 0 -> newY--;

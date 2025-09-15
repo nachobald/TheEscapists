@@ -103,7 +103,7 @@ public class GameController {
 
     //piccone
     public void digWall(Pickaxe pickaxe) {
-    	Player player = model.getPlayer();                               // MODIFICA: usa Player
+    	Player player = model.getPlayer();                               
         int px = player.getX();
         int py = player.getY();
         char[][] map = model.getMap();

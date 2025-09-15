@@ -11,7 +11,6 @@ public class GameViewTest {
 	@Test
     void testInventoryOverlay() {
         GameModel model = new GameModel();
-        GameView view = new GameView(model);
 
         assertFalse(model.isShowInventoryOverlay());
         model.toggleInventoryOverlay();
@@ -23,7 +22,6 @@ public class GameViewTest {
     @Test
     void testGameMessage() {
         GameModel model = new GameModel();
-        GameView view = new GameView(model);
 
         model.setGameMessage("Test messaggio");
         assertTrue(model.isShowMessage());
@@ -37,7 +35,6 @@ public class GameViewTest {
     @Test
     void testMapElementsPositions() {
         GameModel model = new GameModel();
-        GameView view = new GameView(model);
 
         List<Point> trees = model.getTreePositions();
         List<Point> lanterns = model.getLanternPositions();
